@@ -18,7 +18,7 @@ YOUTUBE_STREAM_URL = None
 # ========== GAME ==========
 
 # Change this to your game. It must match the file name in the "Games" folder. Capitalization is important.
-GAME_FILE_NAME = "template"
+GAME_FILE_NAME = "chippi"
 
 # ========== MESSAGE QUEUE CONFIG ==========
 
