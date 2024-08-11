@@ -117,6 +117,27 @@ MOUSE7 = 0x107
 MOUSE_WHEEL_UP = 0x108
 MOUSE_WHEEL_DOWN = 0x109
 
+# Custom mapping
+GC_UP = W
+GC_DOWN = S
+GC_LEFT = A
+GC_RIGHT = D
+GC_CUP = UP_ARROW
+GC_CDOWN = DOWN_ARROW
+GC_CLEFT = LEFT_ARROW
+GC_CRIGHT = RIGHT_ARROW
+GC_A = Q
+GC_B = E
+GC_X = R
+GC_Y = F
+GC_Z = Z
+GC_L = C
+GC_R = V
+
+TEAM_2_MODIFIERS = [LEFT_SHIFT]
+TEAM_3_MODIFIERS = [LEFT_CONTROL]
+TEAM_4_MODIFIERS = [LEFT_SHIFT, LEFT_CONTROL]
+
 #############################################################
 ################## DIRECT INPUT FUNCTIONS ###################
 #############################################################
@@ -141,7 +162,9 @@ def ReleaseKey(hexKeyCode):
     SendInput(1, ctypes.pointer(x), ctypes.sizeof(x))
 
 # Holds down a key for the specified number of seconds
-def HoldAndReleaseKey(hexKeyCode, seconds):
-    HoldKey(hexKeyCode)
+def HoldAndReleaseKey(hexKeyCodes, seconds):
+    for key in hexKeyCodes:
+        HoldKey(key)
     time.sleep(seconds)
-    ReleaseKey(hexKeyCode)
+    for key in hexKeyCodes:
+        ReleaseKey(key)

@@ -16,9 +16,157 @@ import time
 import json
 import concurrent.futures
 import traceback
+from dotenv import load_dotenv
+import os
+from http.server import BaseHTTPRequestHandler, HTTPServer
+from urllib.parse import urlparse, parse_qs, urlunparse, urlencode
+import ssl
+
+host = 'localhost'
+port = 3000
+REDIRECT_URI = f'https://{host}:{port}/'
+
+CODE = None
+
+load_dotenv()
+
+TWITCH_CHANNEL = os.getenv("TWITCH_CHANNEL")
+CLIENT_ID = os.getenv("CLIENT_ID")
+CLIENT_SECRET = os.getenv("CLIENT_SECRET")
+BOT_NAME = "mcutmachine"
+ACCESS_TOKEN = os.getenv("ACCESS_TOKEN")
+REFRESH_TOKEN = os.getenv("REFRESH_TOKEN")
+CODE = None
 
 MAX_TIME_TO_WAIT_FOR_LOGIN = 3
 YOUTUBE_FETCH_INTERVAL = 1
+
+# Shoutouts to https://www.kianryan.co.uk/2022-05-24-twitch-authentication-with-python/ for the auth code flow
+class HandleRequests(BaseHTTPRequestHandler):
+
+    keep_running = True
+
+    def _set_headers(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'text/html')
+        self.end_headers()
+
+    def do_GET(self):
+        global CODE
+
+        self._set_headers()
+
+        path = urlparse(self.path)
+
+        if not path.query:
+            # If there's no auth code, keep serving the web page.
+            request_payload = { 
+                    "client_id": CLIENT_ID,
+                    "force_verify": 'false',
+                    "redirect_uri": REDIRECT_URI,
+                    "response_type": 'code',
+                    "scope": 'chat:edit chat:read'
+                    }
+            encoded_payload = urlencode(request_payload)
+            url = 'https://id.twitch.tv/oauth2/authorize?' + encoded_payload
+            self.wfile.write(f'<html><head><body><a href="{url}">Click here to auth with Twitch</a></body></head>'.encode('utf-8'))
+        else:
+            # If Twitch has provided a code, store it and stop the web server.
+            CODE = parse_qs(path.query)['code'][0]
+            print(f'Code: {CODE}')
+            HandleRequests.keep_running = False
+
+# Authorisation Code Flow
+# Launch HTTP Server, listen for request, direct user to Twitch,
+# listen for response.
+def auth_code_flow():
+
+    httpd = HTTPServer((host, port), HandleRequests)
+    httpd.socket = ssl.wrap_socket (httpd.socket, 
+        keyfile="key.pem", 
+        certfile='cert.pem', server_side=True)
+
+    print(f'Please open your browser at {REDIRECT_URI}')
+
+    # Keep listening until we handle a post request
+    while HandleRequests.keep_running:
+        httpd.handle_request()
+
+def get_tokens():
+    print("Fetching Twitch tokens")
+    global ACCESS_TOKEN
+    global REFRESH_TOKEN
+
+    url = 'https://id.twitch.tv/oauth2/token'
+    request_payload = {
+        "client_id": CLIENT_ID,
+        "client_secret": CLIENT_SECRET,
+        "grant_type": 'authorization_code',
+        "code": CODE,
+        'redirect_uri': REDIRECT_URI
+    }
+
+    r = requests.post(url, data=request_payload).json()
+    try:
+        ACCESS_TOKEN = r['access_token']
+        REFRESH_TOKEN = r['refresh_token']
+        print(f'Access token: {ACCESS_TOKEN}')
+        print(f'Refresh token: {REFRESH_TOKEN}')
+    except:
+        print("Unexpected response on redeeming auth code:")
+        print(r)
+
+def validate():
+    print("Validating Twitch tokens...", end='')
+    url = 'https://id.twitch.tv/oauth2/validate'
+    r = requests.get(url, headers={'Authorization': f'Oauth {ACCESS_TOKEN}'})
+    if r.status_code == 200:
+        print("valid")
+        return True
+    elif r.status_code == 401:
+        print("invalid")
+        return False
+    else:
+        raise Exception(f'Unrecognised status code on validate {r.status_code}')
+    
+def get_tokens():
+    print("Fetching Twitch tokens")
+    global ACCESS_TOKEN
+    global REFRESH_TOKEN
+
+    url = 'https://id.twitch.tv/oauth2/token'
+    request_payload = {
+        "client_id": CLIENT_ID,
+        "client_secret": CLIENT_SECRET,
+        'redirect_uri': REDIRECT_URI
+    }
+    if CODE:
+        request_payload['grant_type'] = 'authorization_code'
+        request_payload['code'] = CODE
+    elif REFRESH_TOKEN:
+        request_payload['grant_type'] = 'refresh_token'
+        request_payload['refresh_token'] = REFRESH_TOKEN
+    else:
+      raise Exception('No code or refresh_token to exchange')
+
+    r = requests.post(url, data=request_payload).json()
+    try:
+        ACCESS_TOKEN = r['access_token']
+        REFRESH_TOKEN = r['refresh_token']
+        print(f'Access token: {ACCESS_TOKEN}')
+        print(f'Refresh token: {REFRESH_TOKEN}')
+    except:
+        print("Unexpected response on redeeming auth code:")
+        print(r)
+
+def oauth():
+    if validate():  # is access token valid?
+        get_tokens()    # refresh access token
+    else:
+        auth_code_flow() # interactive auth code flow
+        get_tokens() # exchange auth token for access token
+
+    return ACCESS_TOKEN # return access token back to application
 
 class Twitch:
     re_prog = None
@@ -51,11 +199,18 @@ class Twitch:
         self.sock.connect(('irc.chat.twitch.tv', 6667))
 
         # Log in anonymously
-        user = 'justinfan%i' % random.randint(10000, 99999)
-        print('Connected to Twitch. Logging in anonymously...')
-        self.sock.send(('PASS asdf\r\nNICK %s\r\n' % user).encode())
+        # user = 'justinfan%i' % random.randint(10000, 99999)
+        # print('Connected to Twitch. Logging in anonymously...')
+        # self.sock.send(('PASS asdf\r\nNICK %s\r\n' % user).encode())
+        
+        # migrated to using a bot so it can send messages as well
+        oauth_token = oauth()
 
-        self.sock.settimeout(1.0 / 60.0)
+        # self.sock.send(f'PASS oauth:{oauth_token}\r\n'.encode('utf-8'))
+        self.sock.send(f"PASS oauth:{oauth_token}\n".encode('utf-8'))
+        self.sock.send(f"NICK {BOT_NAME}\n".encode('utf-8'))
+        self.sock.send(f"JOIN #{TWITCH_CHANNEL}\n".encode('utf-8'))
+        self.sock.settimeout(1.0 / 120.0)
 
         self.login_timestamp = time.time()
 

@@ -4,6 +4,16 @@ import pyautogui
 import time
 from src.TwitchPlays_Connection import Twitch, YouTube
 from src.TwitchPlays_KeyCodes import *
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
+TWITCH_CHANNEL = os.getenv("TWITCH_CHANNEL")
+
+TEAMS = ['8N', '7S', '2S', '2N']
+
+PLAYERS = {}
 
 class TwitchPlays:
     last_time = time.time()
@@ -96,8 +106,38 @@ class TwitchPlays:
             username = message['username'].lower()
 
             print("Got this message from {0}: {1}".format(username, msg))
+            
+            if msg == "!help":
+                message = f"To join a team, type !join [{', '.join(TEAMS)}] (your team name). Once you've joined you can type any of the following commands: {', '.join(self.game.commands)}"
+                self.connection.sock.send(f"PRIVMSG #{TWITCH_CHANNEL} :{message}\r\n".encode('utf-8'))
+                print("Sent a help message!")
+                return
+            elif msg.startswith("!join"):
+                team = msg.split(' ')[1].upper()
+                print(team)
+                if team in TEAMS:
+                    PLAYERS[username] = team
+                    message = f"{username} has joined team {team}."
+                    self.connection.sock.send(f"PRIVMSG #{TWITCH_CHANNEL} :{message}\r\n".encode('utf-8'))
+                return
 
-            self.game.handle_message(msg)
+            # Determine the user's team
+            if username in PLAYERS.keys():
+                team = PLAYERS[username]
+            
+                team_modifier = None
+                match team:
+                    case '8N':
+                        team_modifier = []
+                    case '7S':
+                        team_modifier = TEAM_2_MODIFIERS
+                    case '2S':
+                        team_modifier = TEAM_3_MODIFIERS
+                    case '2N':
+                        team_modifier = TEAM_4_MODIFIERS
+                    case _:
+                        team_modifier = None
+                self.game.handle_message(msg.lower().strip(), team_modifier)
 
         except Exception as e:
             print("Encountered exception: " + str(e))
