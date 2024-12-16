@@ -5,6 +5,9 @@ import pydirectinput
 NUM_COMMANDS = 11
 
 
+commands = ["left", "right", "up", "down", "a", "b", "x", "y", "start", "l", "r"]
+
+
 # NOTE: in order to use this, you do need to map the keys to dolphin
 # NOTE: this only works on Windows machines
 def handle_message(

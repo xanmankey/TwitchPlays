@@ -4,6 +4,16 @@ import pyautogui
 import time
 from src.TwitchPlays_Connection import Twitch, YouTube
 from src.TwitchPlays_KeyCodes import *
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
+TWITCH_CHANNEL = os.getenv("TWITCH_CHANNEL")
+
+TEAMS = ["8N", "7S", "2S", "2N"]
+
+PLAYERS = {}
 
 
 class TwitchPlays:
@@ -117,24 +127,30 @@ class TwitchPlays:
             username = message["username"].lower()
             team = self.teams.get(username)
 
-            # TODO: add custom user commands here
+            # custom user commands
             if msg == "!help":
-                self.connection.twitch_send_message(
-                    "Use commands like !up, !down, !left, !right, !a, !b, !x, !y, !start, !l, !r to play the game and prove that your floor is the best!"
+                message = f"To join a team, type !join [{', '.join(TEAMS)}] (your team name). Once you've joined you can type any of the following commands: {', '.join(self.game.commands)}"
+                self.connection.sock.send(
+                    f"PRIVMSG #{TWITCH_CHANNEL} :{message}\r\n".encode("utf-8")
                 )
+                # self.connection.twitch_send_message(
+                #     "Use commands like !up, !down, !left, !right, !a, !b, !x, !y, !start, !l, !r to play the game and prove that your floor is the best!"
+                # )
                 return
 
-            if "!join " in msg:
+            if msg.startswith("!join"):
                 team = msg.split(" ")[1].upper()
                 if team in TEAMS:
-                    self.connection.twitch_send_message(
-                        "{0} joined team {1}".format(username, team)
+                    message = "{0} joined team {1}".format(username, team)
+                    self.connection.sock.send(
+                        f"PRIVMSG #{TWITCH_CHANNEL} :{message}\r\n".encode("utf-8")
                     )
                     self.teams[username] = TEAMS.index(team)
                     return
                 else:
-                    self.connection.twitch_send_message(
-                        "Invalid team. Please choose from {0}".format(TEAMS)
+                    message = "Invalid team. Please choose from {0}".format(TEAMS)
+                    self.connection.sock.send(
+                        f"PRIVMSG #{TWITCH_CHANNEL} :{message}\r\n".encode("utf-8")
                     )
                     return
 

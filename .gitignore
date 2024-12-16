@@ -1,6 +1,8 @@
 # Custom added
 tester.py
 *.txt
+key.pem
+cert.pem
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
