@@ -13,7 +13,7 @@ STREAMING_ON_TWITCH = True
 
 # If you're streaming on Youtube, replace this with your Youtube's Channel ID
 # Find this by clicking your Youtube profile pic -> Settings -> Advanced Settings
-YOUTUBE_CHANNEL_ID = "" 
+YOUTUBE_CHANNEL_ID = ""
 
 # If you're using an Unlisted stream to test on Youtube, replace "None" below with your stream's URL in quotes.
 # Otherwise you can leave this as "None"
@@ -37,7 +37,7 @@ MESSAGE_RATE = 0.5
 # e.g. if you get a batch of 50 messages, you can choose to only process the first 10 of them and ignore the others.
 # This is helpful for Games where too many inputs at once can actually hinder the gameplay.
 # Setting to ~50 is good for total chaos, ~5-10 is good for 2D platformers
-MAX_QUEUE_LENGTH = 20
+MAX_QUEUE_LENGTH = 30
 
 # Maximum number of threads you can process at a time. If you don't know, just leave it on 100.
 # If you experience performance problems, you could try lowering this number.
@@ -45,7 +45,7 @@ MAX_QUEUE_LENGTH = 20
 MAX_WORKERS = 100
 
 # This is the time in seconds until chat messages start counting, giving you some time to tab into the game.
-STARTUP_TIME = 0
+STARTUP_TIME = 5
 
 try:
     TP = TwitchPlays(
@@ -61,4 +61,4 @@ try:
     )
     TP.start()
 except KeyboardInterrupt:
-    print('Script stopped successfully.')
+    print("Script stopped successfully.")

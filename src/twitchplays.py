@@ -5,16 +5,28 @@ import time
 from src.TwitchPlays_Connection import Twitch, YouTube
 from src.TwitchPlays_KeyCodes import *
 
+
 class TwitchPlays:
     last_time = time.time()
     message_queue = []
+    teams = []
 
     active_tasks = []
     connection = None
 
-    def __init__(self, streaming_on_twitch, twitch_channel, youtube_channel_id, youtube_stream_url, game_file_name,
-                 message_rate, max_queue_length, max_workers, startup_time):
-        
+    def __init__(
+        self,
+        streaming_on_twitch,
+        twitch_channel,
+        youtube_channel_id,
+        youtube_stream_url,
+        game_file_name,
+        message_rate,
+        max_queue_length,
+        max_workers,
+        startup_time,
+    ):
+
         self.message_rate = message_rate
         self.max_queue_length = max_queue_length
         self.max_workers = max_workers
@@ -22,16 +34,16 @@ class TwitchPlays:
 
         try:
             name = "games." + game_file_name
-            self.game = __import__(name, fromlist=[''])
+            self.game = __import__(name, fromlist=[""])
         except ModuleNotFoundError as e:
-            print('ERROR! Missing game file: ' + str(e))
+            print("ERROR! Missing game file: " + str(e))
             return
-        
+
         pyautogui.FAILSAFE = False
 
         # Count down before starting, so you have time to tab into the game
         countdown = startup_time
-        
+
         while countdown > 0:
             print(countdown)
             countdown -= 1
@@ -55,7 +67,7 @@ class TwitchPlays:
                 # New messages are added to the back of the queue
                 self.message_queue += new_messages
                 # Shorten the queue to only the most recent X messages
-                self.message_queue = self.message_queue[-self.max_queue_length:]
+                self.message_queue = self.message_queue[-self.max_queue_length :]
 
             # Get messages to handle by message rate
             messages_to_handle = []
@@ -65,7 +77,11 @@ class TwitchPlays:
                 self.last_time = time.time()
             else:
                 # Determine how many messages we should handle now
-                rate = 1 if self.message_rate == 0 else (time.time() - self.last_time) / self.message_rate
+                rate = (
+                    1
+                    if self.message_rate == 0
+                    else (time.time() - self.last_time) / self.message_rate
+                )
                 amount = int(rate * len(self.message_queue))
 
                 if amount > 0:
@@ -75,7 +91,7 @@ class TwitchPlays:
                     self.last_time = time.time()
 
             # If user presses Shift+Backspace, automatically end the program
-            if keyboard.is_pressed('shift+backspace'):
+            if keyboard.is_pressed("shift+backspace"):
                 exit()
 
             if not messages_to_handle:
@@ -83,21 +99,49 @@ class TwitchPlays:
             else:
                 for message in messages_to_handle:
                     if len(self.active_tasks) <= self.max_workers:
-                        self.active_tasks.append(self.thread_pool.submit(self.handle_message, message))
+                        self.active_tasks.append(
+                            self.thread_pool.submit(self.handle_message, message)
+                        )
                     else:
                         print(
-                            'WARNING: active tasks ({0}) exceeds number of workers ({1}). ({2} messages in the queue)'
-                            .format(len(self.active_tasks), self.max_workers, len(self.message_queue))
+                            "WARNING: active tasks ({0}) exceeds number of workers ({1}). ({2} messages in the queue)".format(
+                                len(self.active_tasks),
+                                self.max_workers,
+                                len(self.message_queue),
+                            )
                         )
 
     def handle_message(self, message):
         try:
-            msg = message['message'].lower()
-            username = message['username'].lower()
+            msg = message["message"].lower()
+            username = message["username"].lower()
+            team = self.teams.get(username)
+
+            # TODO: add custom user commands here
+            if msg == "!help":
+                self.connection.twitch_send_message(
+                    "Use commands like !up, !down, !left, !right, !a, !b, !x, !y, !start, !l, !r to play the game and prove that your floor is the best!"
+                )
+                return
+
+            if "!join " in msg:
+                team = msg.split(" ")[1].upper()
+                if team in TEAMS:
+                    self.connection.twitch_send_message(
+                        "{0} joined team {1}".format(username, team)
+                    )
+                    self.teams[username] = TEAMS.index(team)
+                    return
+                else:
+                    self.connection.twitch_send_message(
+                        "Invalid team. Please choose from {0}".format(TEAMS)
+                    )
+                    return
 
             print("Got this message from {0}: {1}".format(username, msg))
 
-            self.game.handle_message(msg)
+            if team != None:
+                self.game.handle_message(msg, team)
 
         except Exception as e:
             print("Encountered exception: " + str(e))

@@ -2,7 +2,14 @@ from src.TwitchPlays_KeyCodes import *
 import pydirectinput
 
 
-def handle_message(msg):  # do not rename this function. it has to be "handle_message"
+NUM_COMMANDS = 11
+
+
+# NOTE: in order to use this, you do need to map the keys to dolphin
+# NOTE: this only works on Windows machines
+def handle_message(
+    msg, team_num
+):  # do not rename this function. it has to be "handle_message"
     # Now that you have a chat message, this is where you add your game logic.
     # Use the "HoldKey(KEYCODE)" function to permanently press and hold down a key.
     # Use the "ReleaseKey(KEYCODE)" function to release a specific keyboard key.
@@ -10,34 +17,34 @@ def handle_message(msg):  # do not rename this function. it has to be "handle_me
     # Use the pydirectinput library to press or move the mouse
 
     if msg == "left":
-        HoldAndReleaseKey(A, 2)
+        HoldAndReleaseKey(Q + MODIFIER[team_num], 2)
 
     if msg == "right":
-        HoldAndReleaseKey(D, 2)
+        HoldAndReleaseKey(W + MODIFIER[team_num], 2)
 
     if msg == "up":
-        HoldAndReleaseKey(W, 2)
+        HoldAndReleaseKey(E + MODIFIER[team_num], 2)
 
     if msg == "down":
-        HoldAndReleaseKey(S, 2)
+        HoldAndReleaseKey(R + MODIFIER[team_num], 2)
 
     if msg == "a":
-        HoldAndReleaseKey(GC_A, 0.1)
+        HoldAndReleaseKey(T + MODIFIER[team_num], 0.1)
 
     if msg == "b":
-        HoldAndReleaseKey(GC_B, 0.1)
+        HoldAndReleaseKey(Y + MODIFIER[team_num], 0.1)
 
     if msg == "x":
-        HoldAndReleaseKey(GC_X, 0.1)
+        HoldAndReleaseKey(U + MODIFIER[team_num], 0.1)
 
     if msg == "y":
-        HoldAndReleaseKey(GC_Y, 0.1)
+        HoldAndReleaseKey(I + MODIFIER[team_num], 0.1)
 
     if msg == "start":
-        HoldAndReleaseKey(GC_START, 0.1)
+        HoldAndReleaseKey(O + MODIFIER[team_num], 0.1)
 
     if msg == "l":
-        HoldAndReleaseKey(GC_L, 0.1)
+        HoldAndReleaseKey(P + MODIFIER[team_num], 0.1)
 
     if msg == "r":
-        HoldAndReleaseKey(GC_R, 0.1)
+        HoldAndReleaseKey(A + MODIFIER[team_num], 0.1)

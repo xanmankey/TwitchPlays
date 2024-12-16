@@ -1,4 +1,4 @@
-# DougDoug Note: 
+# DougDoug Note:
 # This code contains key codes plus functions to press keys on Windows
 # You should not need to modify anything in this file, just use as is.
 
@@ -6,11 +6,15 @@ import time
 import ctypes
 import pynput
 
+TEAMS = ["8N", "7S", "6S", "5S"]
+MODIFIER = [0x80, 0xC0, 0xA0]
+
 #############################################################
 #################### DIRECT X KEY CODES #####################
 #############################################################
 
 # Key Codes found at: https://docs.microsoft.com/en-us/previous-versions/visualstudio/visual-studio-6.0/aa299374(v=vs.60)
+# DEFAULT SET (TEAM 1)
 Q = 0x10
 W = 0x11
 E = 0x12
@@ -37,6 +41,90 @@ V = 0x2F
 B = 0x30
 N = 0x31
 M = 0x32
+
+# SET WITH SHIFT (TEAM 2)
+SHIFT_Q = 0x10
+SHIFT_W = 0x11
+SHIFT_E = 0x12
+SHIFT_R = 0x13
+SHIFT_T = 0x14
+SHIFT_Y = 0x15
+SHIFT_U = 0x16
+SHIFT_I = 0x17
+SHIFT_O = 0x18
+SHIFT_P = 0x19
+SHIFT_A = 0x1E
+SHIFT_S = 0x1F
+SHIFT_D = 0x20
+SHIFT_F = 0x21
+SHIFT_G = 0x22
+SHIFT_H = 0x23
+SHIFT_J = 0x24
+SHIFT_K = 0x25
+SHIFT_L = 0x26
+SHIFT_Z = 0x2C
+SHIFT_X = 0x2D
+SHIFT_C = 0x2E
+SHIFT_V = 0x2F
+SHIFT_B = 0x30
+SHIFT_N = 0x31
+SHIFT_M = 0x32
+
+# SET WITH CTRL (TEAM 3)
+CTRL_Q = 0x10
+CTRL_W = 0x11
+CTRL_E = 0x12
+CTRL_R = 0x13
+CTRL_T = 0x14
+CTRL_Y = 0x15
+CTRL_U = 0x16
+CTRL_I = 0x17
+CTRL_O = 0x18
+CTRL_P = 0x19
+CTRL_A = 0x1E
+CTRL_S = 0x1F
+CTRL_D = 0x20
+CTRL_F = 0x21
+CTRL_G = 0x22
+CTRL_H = 0x23
+CTRL_J = 0x24
+CTRL_K = 0x25
+CTRL_L = 0x26
+CTRL_Z = 0x2C
+CTRL_X = 0x2D
+CTRL_C = 0x2E
+CTRL_V = 0x2F
+CTRL_B = 0x30
+CTRL_N = 0x31
+CTRL_M = 0x32
+
+# SET WITH ALT (TEAM 4)
+ALT_Q = 0x10
+ALT_W = 0x11
+ALT_E = 0x12
+ALT_R = 0x13
+ALT_T = 0x14
+ALT_Y = 0x15
+ALT_U = 0x16
+ALT_I = 0x17
+ALT_O = 0x18
+ALT_P = 0x19
+ALT_A = 0x1E
+ALT_S = 0x1F
+ALT_D = 0x20
+ALT_F = 0x21
+ALT_G = 0x22
+ALT_H = 0x23
+ALT_J = 0x24
+ALT_K = 0x25
+ALT_L = 0x26
+ALT_Z = 0x2C
+ALT_X = 0x2D
+ALT_C = 0x2E
+ALT_V = 0x2F
+ALT_B = 0x30
+ALT_N = 0x31
+ALT_M = 0x32
 
 LEFT_ARROW = 0xCB
 RIGHT_ARROW = 0xCD
@@ -125,20 +213,30 @@ MOUSE_WHEEL_DOWN = 0x109
 # Use these to prevent conflict errors with pynput.
 SendInput = ctypes.windll.user32.SendInput
 
+
 def HoldKey(hexKeyCode):
     extra = ctypes.c_ulong(0)
     ii_ = pynput._util.win32.INPUT_union()
-    ii_.ki = pynput._util.win32.KEYBDINPUT(0, hexKeyCode, 0x0008, 0, ctypes.cast(ctypes.pointer(extra), ctypes.c_void_p))
+    ii_.ki = pynput._util.win32.KEYBDINPUT(
+        0, hexKeyCode, 0x0008, 0, ctypes.cast(ctypes.pointer(extra), ctypes.c_void_p)
+    )
     x = pynput._util.win32.INPUT(ctypes.c_ulong(1), ii_)
     SendInput(1, ctypes.pointer(x), ctypes.sizeof(x))
+
 
 def ReleaseKey(hexKeyCode):
     extra = ctypes.c_ulong(0)
     ii_ = pynput._util.win32.INPUT_union()
-    ii_.ki = pynput._util.win32.KEYBDINPUT(0, hexKeyCode, 0x0008 | 0x0002, 0,
-                                           ctypes.cast(ctypes.pointer(extra), ctypes.c_void_p))
+    ii_.ki = pynput._util.win32.KEYBDINPUT(
+        0,
+        hexKeyCode,
+        0x0008 | 0x0002,
+        0,
+        ctypes.cast(ctypes.pointer(extra), ctypes.c_void_p),
+    )
     x = pynput._util.win32.INPUT(ctypes.c_ulong(1), ii_)
     SendInput(1, ctypes.pointer(x), ctypes.sizeof(x))
+
 
 # Holds down a key for the specified number of seconds
 def HoldAndReleaseKey(hexKeyCode, seconds):
